@@ -20,6 +20,9 @@ if (\rex::isBackend() && \rex::getUser()) {
 
     // AJAX Handler für API Anfragen
     if (\rex_request('file_importer_api', 'bool', false)) {
+        \rex_logger::factory()->log('debug', 'File Importer API Request', [
+            'request' => $_REQUEST
+        ]);
         try {
             $action = \rex_request('action', 'string');
             $provider = \rex_request('provider', 'string');
