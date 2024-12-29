@@ -64,16 +64,12 @@ if (\rex::isBackend() && \rex::getUser()) {
     }
 }
 
-// Globale Cache-Handler für die Addon-Konfiguration
-\rex_extension::register('PACKAGE_DELETE', function($ep) {
-    if ($ep->getParam('package')->getName() === 'file_importer') {
-        \rex_cache::delete('fileimporter.');
-    }
-});
-
 // Cache leeren wenn Provider-Einstellungen gespeichert werden
 \rex_extension::register('REX_FORM_SAVED', function($ep) {
     if (strpos(\rex_be_controller::getCurrentPage(), 'file_importer') === 0) {
-        \rex_cache::delete('fileimporter.');
+        // Cache-Keys mit dem Prefix löschen
+        $cacheFolder = \rex_path::addonCache('file_importer');
+        if (is_dir($cacheFolder)) {
+            array_map('unlink', glob($cacheFolder . '/*.cache'));
     }
 });
