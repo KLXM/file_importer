@@ -72,12 +72,13 @@ $(document).on('rex:ready', function() {
             
             $.ajax({
                 url: window.location.href,
+                method: 'GET',
                 data: {
                     file_importer_api: 1,
                     action: 'search',
                     provider: this.currentProvider,
                     query: this.currentQuery,
-                    page: this.currentPage
+                    page: parseInt(this.currentPage)
                 },
                 success: (response) => {
                     if (response.success) {
