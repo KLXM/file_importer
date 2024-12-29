@@ -1,130 +1,95 @@
 <?php
-namespace Klxm\FileImporter\Provider;
+namespace Klxm\FileImporter;
 
-class PixabayProvider extends AbstractProvider
-{
-    protected string $apiUrl = 'https://pixabay.com/api/';
-    protected int $itemsPerPage = 20;
+use Klxm\FileImporter\Provider\PixabayProvider;
 
-    public function getName(): string
-    {
-        return 'pixabay';
+// Nur im Backend ausführen
+if (\rex::isBackend() && \rex::getUser()) {
+
+    // Provider registrieren
+    if (!isset($this->providers)) {
+        $this->providers = [];
+    }
+    $this->providers['pixabay'] = new PixabayProvider();
+
+    // Assets nur auf der File-Importer-Seite einbinden
+    if (\rex_be_controller::getCurrentPage() == 'file_importer/main') {
+        \rex_view::addCssFile($this->getAssetsUrl('file_importer.css'));
+        \rex_view::addJsFile($this->getAssetsUrl('file_importer.js'));
     }
 
-    public function isConfigured(): bool
-    {
-        return isset($this->config['apikey']) && !empty($this->config['apikey']);
-    }
-
-    public function getConfigFields(): array
-    {
-        return [
-            [
-                'label' => 'file_importer_pixabay_apikey',
-                'name' => 'apikey',
-                'type' => 'text',
-                'notice' => 'file_importer_pixabay_apikey_notice'
-            ]
-        ];
-    }
-
-    public function search(string $query, int $page = 1, array $options = []): array
-    {
-        if (!$this->isConfigured()) {
-            throw new \Exception('Pixabay API key not configured');
-        }
-
-        $cacheKey = $this->getCacheKey($query, $page, $options);
-        $cached = $this->getFromCache($cacheKey);
-
-        if ($cached !== false) {
-            return $cached;
-        }
-
-        $params = [
-            'key' => $this->config['apikey'],
-            'q' => $query, // http_build_query wird die Kodierung übernehmen
-            'page' => $page,
-            'per_page' => $this->itemsPerPage,
-            'image_type' => 'all',
-            'safesearch' => 'true',
-            'lang' => \rex_i18n::getLanguage()
-        ];
-
-        $url = $this->apiUrl . '?' . http_build_query($params);
-        
-        // Debug-Log für die API-Anfrage
-        \rex_logger::factory()->log('debug', 'Pixabay API Request', [
-            'url' => $url,
-            'query' => $query,
-            'page' => $page
+    // AJAX Handler für API Anfragen
+    if (\rex_request('file_importer_api', 'bool', false)) {
+        \rex_logger::factory()->log('debug', 'File Importer API Request', [
+            'request' => $_REQUEST,
+            'get' => $_GET,
+            'post' => $_POST
         ]);
 
         try {
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $url,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_SSL_VERIFYPEER => true,
-                CURLOPT_TIMEOUT => 20
+            $action = \rex_request('action', 'string');
+            $provider = \rex_request('provider', 'string');
+            $query = \rex_request('query', 'string', '');
+            $page = \rex_request('page', 'integer', 1);
+            
+            // Debug-Ausgabe vor der Verarbeitung
+            \rex_logger::factory()->log('debug', 'Processing API Request', [
+                'action' => $action,
+                'provider' => $provider,
+                'query' => $query,
+                'page' => $page
             ]);
-
-            $response = curl_exec($ch);
+        try {
+            $action = \rex_request('action', 'string');
+            $provider = \rex_request('provider', 'string');
+            $query = \rex_request('query', 'string', '');
+            $page = \rex_request('page', 'integer', 1);
             
-            if ($response === false) {
-                throw new \Exception(curl_error($ch));
-            }
-            
-            curl_close($ch);
-
-            $data = json_decode($response, true);
-            if (!isset($data['hits'])) {
-                throw new \Exception('Invalid response from Pixabay API');
+            if (!isset($this->providers[$provider])) {
+                throw new \rex_exception('Invalid provider');
             }
 
-            $results = [
-                'items' => array_map(function($item) {
-                    return [
-                        'id' => $item['id'],
-                        'preview_url' => $item['webformatURL'],
-                        'download_url' => $item['largeImageURL'],
-                        'title' => $item['tags'],
-                        'author' => $item['user'],
-                        'width' => $item['webformatWidth'],
-                        'height' => $item['webformatHeight'],
-                        'size' => [
-                            'preview' => ['url' => $item['previewURL']],
-                            'web' => ['url' => $item['webformatURL']],
-                            'large' => ['url' => $item['largeImageURL']],
-                            'original' => ['url' => $item['largeImageURL']]
-                        ]
+            $providerInstance = $this->providers[$provider];
+
+            switch ($action) {
+                case 'search':
+                    $options = [
+                        'type' => \rex_request('type', 'string', 'all'),
+                        'category' => \rex_request('category', 'string', '')
                     ];
-                }, $data['hits']),
-                'total' => $data['totalHits'],
-                'page' => $page,
-                'total_pages' => ceil($data['totalHits'] / $this->itemsPerPage)
-            ];
+                    $results = $providerInstance->search($query, $page, $options);
+                    \rex_response::sendJson(['success' => true, 'data' => $results]);
+                    break;
 
-            $this->setCache($cacheKey, $results);
-            return $results;
+                case 'download':
+                    $url = \rex_request('url', 'string');
+                    $filename = \rex_request('filename', 'string');
+                    $result = $providerInstance->download($url, $filename);
+                    \rex_response::sendJson(['success' => $result]);
+                    break;
+
+                default:
+                    throw new \rex_exception('Invalid action');
+            }
 
         } catch (\Exception $e) {
             \rex_logger::logException($e);
-            throw $e;
+            \rex_response::sendJson([
+                'success' => false, 
+                'error' => $e->getMessage()
+            ]);
         }
-    }
-
-    public function download(string $url, string $filename): bool
-    {
-        if (!$this->isConfigured()) {
-            throw new \Exception('Pixabay API key not configured');
-        }
-
-        $filename = $this->sanitizeFilename($filename);
-        if (!pathinfo($filename, PATHINFO_EXTENSION)) {
-            $filename .= '.jpg';
-        }
-
-        return $this->downloadFile($url, $filename);
+        exit;
     }
 }
+
+// Cache leeren wenn Provider-Einstellungen gespeichert werden
+\rex_extension::register('REX_FORM_SAVED', function($ep) {
+    if (strpos(\rex_be_controller::getCurrentPage(), 'file_importer') === 0) {
+        // Cache-Files löschen
+        $cacheFolder = \rex_path::addonCache('file_importer');
+        if (is_dir($cacheFolder)) {
+            array_map('unlink', glob($cacheFolder . '/*.cache'));
+        }
+    }
+});
