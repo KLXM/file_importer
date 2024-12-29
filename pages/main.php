@@ -6,6 +6,7 @@ use rex_url;
 use rex_view;
 use rex_media_category_select;
 use rex_fragment;
+use rex_paginate;
 
 // Debug
 \rex_logger::factory()->log('debug', 'Start Search', $_GET);
@@ -184,52 +185,11 @@ if ($searchResults && isset($searchResults['items'])) {
             </div>
         </div>';
     
-    // Pagination
-    if ($searchResults['total_pages'] > 1) {
-        $content .= '
-        <div class="panel-footer">
-            <nav aria-label="Page navigation">
-                <ul class="pagination">';
-        
-        // Previous
-        if ($page > 1) {
-            $content .= '
-                    <li>
-                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $page - 1]) . '">
-                            &laquo;
-                        </a>
-                    </li>';
+        // Pagination
+        if ($searchResults['total_pages'] > 1) {
+            $paginate = new rex_paginate($searchResults['total_pages'], $this->itemsPerPage , $page, rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => '###page###']));
+            $content .= '<div class="panel-footer">' . $paginate->get() . '</div>';
         }
-        
-        // Page Numbers
-        for ($i = 1; $i <= $searchResults['total_pages']; $i++) {
-            if ($i == $page) {
-                $content .= '<li class="active"><span>' . $i . '</span></li>';
-            } else {
-                $content .= '
-                    <li>
-                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $i]) . '">
-                            ' . $i . '
-                        </a>
-                    </li>';
-            }
-        }
-        
-        // Next
-        if ($page < $searchResults['total_pages']) {
-            $content .= '
-                    <li>
-                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $page + 1]) . '">
-                            &raquo;
-                        </a>
-                    </li>';
-        }
-        
-        $content .= '
-                </ul>
-            </nav>
-        </div>';
-    }
     
     $content .= '
     </div>';
@@ -242,7 +202,3 @@ $content .= '
     </div>
 </div>';
 
-// Fragment erstellen und ausgeben
-$fragment = new rex_fragment();
-$fragment->setVar('body', $content, false);
-echo $fragment->parse('core/page/section.php');
