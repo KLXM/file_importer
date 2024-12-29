@@ -6,7 +6,7 @@ use rex_url;
 use rex_view;
 use rex_media_category_select;
 use rex_fragment;
-use rex_paginate;
+use rex_pager;
 
 // Debug
 \rex_logger::factory()->log('debug', 'Start Search', $_GET);
@@ -176,8 +176,31 @@ $content = '
         
             // Pagination
             if ($searchResults['total_pages'] > 1) {
-                $paginate = new rex_paginate($searchResults['total_pages'], 20 , $page, rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => '###page###']));
-                $content .= '<div class="panel-footer">' . $paginate->get() . '</div>';
+                 $pager = new rex_pager(20, 'page');
+                 $pager->setRowCount($searchResults['total']);
+                 $pager->setPage($page-1);
+
+
+                $content .= '<div class="panel-footer"><nav aria-label="Page navigation"><ul class="pagination">';
+
+                 if ($pager->getCurrentPage() > $pager->getFirstPage()) {
+                    $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $pager->getPrevPage() + 1]).'">«</a></li>';
+                 }
+                
+                for ($i = $pager->getFirstPage(); $i <= $pager->getLastPage(); $i++) {
+                    if ($pager->isActivePage($i)) {
+                        $content .= '<li class="active"><span>'. ($i+1).'</span></li>';
+                    } else {
+                        $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $i+1]).'">'. ($i+1) .'</a></li>';
+                    }
+                }
+
+                if ($pager->getCurrentPage() < $pager->getLastPage()) {
+                     $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $pager->getNextPage() + 1]).'">»</a></li>';
+                }
+               
+                $content .= '</ul></nav></div>';
+
             }
         
         $content .= '
