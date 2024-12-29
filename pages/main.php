@@ -175,33 +175,31 @@ $content = '
             </div>';
         
             // Pagination
-            if ($searchResults['total_pages'] > 1) {
-                 $pager = new rex_pager(20, 'page');
-                 $pager->setRowCount($searchResults['total']);
-                 $pager->setPage($page-1);
+        if ($searchResults['total_pages'] > 1) {
+            $pager = new rex_pager(20, 'page');
+            $pager->setRowCount($searchResults['total']);
+             $pager->setPage($page-1);
 
+           $content .= '<div class="panel-footer"><nav aria-label="Page navigation"><ul class="pagination">';
 
-                $content .= '<div class="panel-footer"><nav aria-label="Page navigation"><ul class="pagination">';
-
-                 if ($pager->getCurrentPage() > $pager->getFirstPage()) {
-                    $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $pager->getPrevPage() + 1]).'">«</a></li>';
-                 }
-                
-                for ($i = $pager->getFirstPage(); $i <= $pager->getLastPage(); $i++) {
-                    if ($pager->isActivePage($i)) {
-                        $content .= '<li class="active"><span>'. ($i+1).'</span></li>';
-                    } else {
-                        $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $i+1]).'">'. ($i+1) .'</a></li>';
-                    }
-                }
-
-                if ($pager->getCurrentPage() < $pager->getLastPage()) {
-                     $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $pager->getNextPage() + 1]).'">»</a></li>';
-                }
-               
-                $content .= '</ul></nav></div>';
-
+            if ($pager->getCurrentPage() > $pager->getFirstPage()) {
+                $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $pager->getPrevPage() + 1]).'">«</a></li>';
             }
+            
+            for ($i = $pager->getFirstPage(); $i <= $pager->getLastPage(); $i++) {
+                if ($pager->isActivePage($i)) {
+                    $content .= '<li class="active"><span>'. ($i+1).'</span></li>';
+                } else {
+                      $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => ($i + 1)]).'">'. ($i+1) .'</a></li>';
+                }
+            }
+
+            if ($pager->getCurrentPage() < $pager->getLastPage()) {
+                 $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $pager->getNextPage() + 1]).'">»</a></li>';
+            }
+           
+            $content .= '</ul></nav></div>';
+        }
         
         $content .= '
         </div>';
