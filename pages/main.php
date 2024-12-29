@@ -24,10 +24,9 @@ $searchQuery = rex_get('query', 'string', '');
 $searchType = rex_get('type', 'string', 'image');
 $page = max(1, rex_get('page', 'int', 1));
 
-// Debug der Eingabeparameter
-\rex_logger::factory()->log('debug', 'Raw Input Parameters', [
-    '_GET' => $_GET,
-    'extracted' => [
+dump([
+    'GET' => $_GET,
+    'Extracted' => [
         'query' => $searchQuery,
         'type' => $searchType,
         'page' => $page
@@ -36,27 +35,10 @@ $page = max(1, rex_get('page', 'int', 1));
 
 if ($searchQuery) {
     try {
-        // Debug vor API-Aufruf
-        \rex_logger::factory()->log('debug', 'Calling Provider Search', [
-            'query' => $searchQuery,
-            'type' => $searchType,
-            'page' => $page,
-            'provider_class' => get_class($provider)
-        ]);
-
         $searchResults = $provider->search($searchQuery, $page, ['type' => $searchType]);
-        
-        // Debug der Ergebnisse
-        \rex_logger::factory()->log('debug', 'Provider Search Results', [
-            'has_results' => !empty($searchResults),
-            'items_count' => count($searchResults['items'] ?? []),
-            'total' => $searchResults['total'] ?? 0
-        ]);
+        dump('Search Results', $searchResults);
     } catch (\Exception $e) {
-        \rex_logger::factory()->log('error', 'Search Error', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
+        dump('Error', $e->getMessage());
         echo rex_view::error($e->getMessage());
     }
 }
