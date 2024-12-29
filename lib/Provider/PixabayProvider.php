@@ -7,6 +7,18 @@ class PixabayProvider extends AbstractProvider
     protected string $apiUrlVideos = 'https://pixabay.com/api/videos/';
     protected int $itemsPerPage = 20;
 
+    public function __construct()
+    {
+        $this->loadConfig();
+        dump('Config loaded:', $this->config);
+    }
+
+    protected function loadConfig(): void
+    {
+        $this->config = \rex_addon::get('file_importer')->getConfig('pixabay') ?? [];
+        dump('Loading config from addon:', \rex_addon::get('file_importer')->getConfig());
+    }
+
     public function getName(): string
     {
         return 'pixabay';
@@ -14,7 +26,9 @@ class PixabayProvider extends AbstractProvider
 
     public function isConfigured(): bool
     {
-        return isset($this->config['apikey']) && !empty($this->config['apikey']);
+        $configured = isset($this->config['apikey']) && !empty($this->config['apikey']);
+        dump('is configured?', $configured, $this->config);
+        return $configured;
     }
 
     public function getConfigFields(): array
@@ -38,13 +52,12 @@ class PixabayProvider extends AbstractProvider
         $type = $options['type'] ?? 'image';
         
         // Debug-Log für Suchparameter
-        $debug = "Pixabay Search Call:\n";
-        $debug .= "Query: " . $query . "\n";
-        $debug .= "Page: " . $page . "\n";
-        $debug .= "Type: " . $type . "\n";
-        $debug .= "API Key set: " . (!empty($this->config['apikey']) ? 'yes' : 'no') . "\n";
-        
-        \rex_logger::factory()->log('debug', $debug);
+        dump('Search parameters:', [
+            'query' => $query,
+            'page' => $page,
+            'type' => $type,
+            'config' => $this->config
+        ]);
 
         // Basis-URL basierend auf dem Typ
         $baseUrl = ($type === 'video') ? $this->apiUrlVideos : $this->apiUrl;
@@ -56,7 +69,7 @@ class PixabayProvider extends AbstractProvider
             'page' => $page,
             'per_page' => $this->itemsPerPage,
             'safesearch' => 'true',
-            'lang' => 'de'  // Explizit auf Deutsch setzen
+            'lang' => 'de'
         ];
 
         if ($type === 'image') {
@@ -67,13 +80,7 @@ class PixabayProvider extends AbstractProvider
         
         // Debug URL (ohne API Key)
         $debugUrl = preg_replace('/key=([^&]+)/', 'key=XXXXX', $url);
-        dump('API URL', $debugUrl);
-
-        // Debug-Log für API-Aufruf
-        \rex_logger::factory()->log('debug', 'Pixabay API Call', [
-            'url' => preg_replace('/key=([^&]+)/', 'key=XXXXX', $url), // API-Key verstecken
-            'full_params' => $params
-        ]);
+        dump('API URL:', $debugUrl);
 
         try {
             $ch = curl_init();
@@ -87,13 +94,6 @@ class PixabayProvider extends AbstractProvider
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            $debug = "Pixabay API Response:\n";
-            $debug .= "HTTP Code: " . $httpCode . "\n";
-            $debug .= "Curl Error: " . curl_error($ch) . "\n";
-            $debug .= "Response Preview: " . substr($response, 0, 1000) . "\n";
-            
-            \rex_logger::factory()->log('debug', $debug);
-
             if ($response === false) {
                 throw new \Exception('Curl error: ' . curl_error($ch));
             }
@@ -102,15 +102,9 @@ class PixabayProvider extends AbstractProvider
 
             $data = json_decode($response, true);
             if (!isset($data['hits'])) {
-                \rex_logger::factory()->log('error', "Invalid API Response:\n" . $response);
+                dump('API Error Response:', $data);
                 throw new \Exception('Invalid response from Pixabay API');
             }
-            
-            // Debug der API-Antwort
-            dump('Raw API Response', [
-                'total' => $data['totalHits'],
-                'sample_hits' => array_slice($data['hits'], 0, 3)
-            ]);
 
             $results = [
                 'items' => array_map(function($item) use ($type) {
@@ -149,21 +143,10 @@ class PixabayProvider extends AbstractProvider
                 'total_pages' => ceil($data['totalHits'] / $this->itemsPerPage)
             ];
 
-            // Debug-Log für verarbeitete Ergebnisse
-            \rex_logger::factory()->log('debug', 'Pixabay Search Results', [
-                'total_hits' => $data['totalHits'],
-                'items_count' => count($results['items']),
-                'current_page' => $page,
-                'total_pages' => $results['total_pages']
-            ]);
-
             return $results;
 
         } catch (\Exception $e) {
-            \rex_logger::factory()->log('error', 'Pixabay Search Error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            dump('API Error:', $e->getMessage());
             throw $e;
         }
     }
