@@ -60,3 +60,12 @@ file_importer_provider_active = Aktiv
 file_importer_provider_inactive = Inaktiv
 file_importer_provider_settings = Provider-Einstellungen
 file_importer_provider_save = Provider speichern
+
+# Konfiguration - Allgemein
+file_importer_results_per_page = Ergebnisse pro Seite
+file_importer_cache_lifetime = Cache-Lebenszeit (Sekunden)
+file_importer_cache_lifetime_notice = Wie lange sollen die Suchergebnisse zwischengespeichert werden? (3600-604800 Sekunden, Standard: 86400)
+file_importer_provider_status = Status
+
+# Validierung
+file_importer_pixabay_apikey_missing = Bitte geben Sie einen API-Key für Pixabay ein
