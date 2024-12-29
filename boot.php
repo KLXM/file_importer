@@ -12,11 +12,11 @@ if (\rex::isBackend() && \rex::getUser()) {
     }
     $this->providers['pixabay'] = new PixabayProvider();
 
-
+    // Assets nur auf der File-Importer-Seite einbinden
+    if (\rex_be_controller::getCurrentPage() == 'file_importer/main') {
         \rex_view::addCssFile($this->getAssetsUrl('file_importer.css'));
-
-     
-  
+        \rex_view::addJsFile($this->getAssetsUrl('file_importer.js'));
+    }
 
     // AJAX Handler für API Anfragen
     if (\rex_request('file_importer_api', 'bool', false)) {
