@@ -7,6 +7,9 @@ use rex_view;
 use rex_media_category_select;
 use rex_fragment;
 
+// Debug
+\rex_logger::factory()->log('debug', 'Start Search', $_GET);
+
 // Prüfe ob mindestens ein Provider konfiguriert ist
 $provider = $this->providers['pixabay'] ?? null;
 if (!$provider || !$provider->isConfigured()) {
@@ -18,12 +21,29 @@ if (!$provider || !$provider->isConfigured()) {
 // Suche durchführen wenn Query vorhanden
 $searchResults = [];
 $searchQuery = rex_get('query', 'string', '');
+$searchType = rex_get('type', 'string', 'image');
 $page = max(1, rex_get('page', 'int', 1));
+
+// Debug
+\rex_logger::factory()->log('debug', 'Search Parameters', [
+    'query' => $searchQuery,
+    'type' => $searchType,
+    'page' => $page
+]);
 
 if ($searchQuery) {
     try {
-        $searchResults = $provider->search($searchQuery, $page);
+        $searchResults = $provider->search($searchQuery, $page, ['type' => $searchType]);
+        // Debug
+        \rex_logger::factory()->log('debug', 'Search Results', [
+            'count' => count($searchResults['items'] ?? []),
+            'total' => $searchResults['total'] ?? 0
+        ]);
     } catch (\Exception $e) {
+        \rex_logger::factory()->log('error', 'Search Error', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
         echo rex_view::error($e->getMessage());
     }
 }
@@ -79,31 +99,44 @@ $content = '
                     </div>
                 </header>
                 <div class="panel-body">
-                    <form method="get" action="' . rex_url::currentBackendPage() . '">
+                    <form method="get" action="' . rex_url::currentBackendPage() . '" class="form-inline">
                         <input type="hidden" name="page" value="file_importer/main">
-                        <div class="input-group">
-                            <select name="type" class="form-control" style="width: 100px; border-right: 0;">
-                                <option value="image" ' . (rex_get('type', 'string', 'image') === 'image' ? 'selected' : '') . '>Bilder</option>
-                                <option value="video" ' . (rex_get('type', 'string') === 'video' ? 'selected' : '') . '>Videos</option>
-                            </select>
-                            <input type="text" 
-                                   class="form-control" 
-                                   name="query" 
-                                   value="' . rex_escape($searchQuery) . '"
-                                   placeholder="' . rex_i18n::msg('file_importer_search_placeholder') . '"
-                                   required>
-                            <span class="input-group-btn">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="rex-icon fa-search"></i>
-                                    ' . rex_i18n::msg('file_importer_search') . '
-                                </button>
-                            </span>
+                        <div class="form-group" style="width: 100%;">
+                            <div class="input-group" style="width: 100%;">
+                                <div class="input-group-btn">
+                                    <select name="type" class="form-control" style="width: auto; border-radius: 4px 0 0 4px;">
+                                        <option value="image" ' . ($searchType === 'image' ? 'selected' : '') . '>Bilder</option>
+                                        <option value="video" ' . ($searchType === 'video' ? 'selected' : '') . '>Videos</option>
+                                    </select>
+                                </div>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="query" 
+                                       value="' . rex_escape($searchQuery) . '"
+                                       placeholder="' . rex_i18n::msg('file_importer_search_placeholder') . '"
+                                       required>
+                                <span class="input-group-btn">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="rex-icon fa-search"></i>
+                                        ' . rex_i18n::msg('file_importer_search') . '
+                                    </button>
+                                </span>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>';
+
+// Debug Ausgabe für Entwicklung
+if (\rex::isDebugMode()) {
+    $content .= '<div class="alert alert-info">Debug: ';
+    $content .= 'Query: ' . rex_escape($searchQuery) . ', ';
+    $content .= 'Type: ' . rex_escape($searchType) . ', ';
+    $content .= 'Page: ' . $page;
+    $content .= '</div>';
+}
 
 // Suchergebnisse anzeigen
 if ($searchResults && isset($searchResults['items'])) {
@@ -167,7 +200,7 @@ if ($searchResults && isset($searchResults['items'])) {
         if ($page > 1) {
             $content .= '
                     <li>
-                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'page' => $page - 1]) . '">
+                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $page - 1]) . '">
                             &laquo;
                         </a>
                     </li>';
@@ -180,7 +213,7 @@ if ($searchResults && isset($searchResults['items'])) {
             } else {
                 $content .= '
                     <li>
-                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'page' => $i]) . '">
+                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $i]) . '">
                             ' . $i . '
                         </a>
                     </li>';
@@ -191,7 +224,7 @@ if ($searchResults && isset($searchResults['items'])) {
         if ($page < $searchResults['total_pages']) {
             $content .= '
                     <li>
-                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'page' => $page + 1]) . '">
+                        <a href="' . rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $page + 1]) . '">
                             &raquo;
                         </a>
                     </li>';
