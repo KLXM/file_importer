@@ -25,21 +25,10 @@ $searchQuery = rex_get('query', 'string', '');
 $searchType = rex_get('type', 'string', 'image');
 $page = max(1, rex_get('page', 'int', 1));
 
-dump([
-    'GET' => $_GET,
-    'Extracted' => [
-        'query' => $searchQuery,
-        'type' => $searchType,
-        'page' => $page
-    ]
-]);
-
 if ($searchQuery) {
     try {
         $searchResults = $provider->search($searchQuery, $page, ['type' => $searchType]);
-        dump('Search Results', $searchResults);
     } catch (\Exception $e) {
-        dump('Error', $e->getMessage());
         echo rex_view::error($e->getMessage());
     }
 }
@@ -187,7 +176,7 @@ if ($searchResults && isset($searchResults['items'])) {
     
         // Pagination
         if ($searchResults['total_pages'] > 1) {
-            $paginate = new rex_paginate($searchResults['total_pages'], $this->itemsPerPage , $page, rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => '###page###']));
+            $paginate = new rex_paginate($searchResults['total_pages'], 20 , $page, rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => '###page###']));
             $content .= '<div class="panel-footer">' . $paginate->get() . '</div>';
         }
     
@@ -201,4 +190,3 @@ $content .= '
         ' . rex_i18n::msg('file_importer_pixabay_attribution') . '
     </div>
 </div>';
-
