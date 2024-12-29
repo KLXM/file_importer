@@ -14,8 +14,7 @@ if (\rex::isBackend() && \rex::getUser()) {
 
 
         \rex_view::addCssFile($this->getAssetsUrl('file_importer.css'));
-        \rex_view::addJsFile($this->getAssetsUrl('file_importer.js'));
-        
+
      
   
 
