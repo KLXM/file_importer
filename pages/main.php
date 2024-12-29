@@ -113,80 +113,85 @@ $content = '
             </div>
         </div>
     </div>';
-
-// Debug Ausgabe für Entwicklung
-if (\rex::isDebugMode()) {
-    $content .= '<div class="alert alert-info">Debug: ';
-    $content .= 'Query: ' . rex_escape($searchQuery) . ', ';
-    $content .= 'Type: ' . rex_escape($searchType) . ', ';
-    $content .= 'Page: ' . $page;
-    $content .= '</div>';
-}
-
-// Suchergebnisse anzeigen
-if ($searchResults && isset($searchResults['items'])) {
-    $content .= '
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <div class="panel-title">
-                ' . count($searchResults['items']) . ' ' . rex_i18n::msg('file_importer_results_found') . '
-            </div>
-        </div>
-        <div class="panel-body">
-            <div class="file-importer-results">';
     
-    foreach ($searchResults['items'] as $item) {
+    // Debug Ausgabe für Entwicklung
+    if (\rex::isDebugMode()) {
+        $content .= '<div class="alert alert-info">Debug: ';
+        $content .= 'Query: ' . rex_escape($searchQuery) . ', ';
+        $content .= 'Type: ' . rex_escape($searchType) . ', ';
+        $content .= 'Page: ' . $page;
+        $content .= '</div>';
+    }
+    
+    // Suchergebnisse anzeigen
+    if ($searchResults && isset($searchResults['items'])) {
         $content .= '
-            <div class="file-importer-item">
-                <div class="file-importer-preview">
-                    ' . ($item['type'] === 'video' ? '
-                    <video controls>
-                        <source src="' . rex_escape($item['size']['tiny']['url']) . '" type="video/mp4">
-                    </video>
-                    ' : '
-                    <img src="' . rex_escape($item['preview_url']) . '" alt="' . rex_escape($item['title']) . '">
-                    ') . '
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <div class="panel-title">
+                    ' . count($searchResults['items']) . ' ' . rex_i18n::msg('file_importer_results_found') . '
                 </div>
-                <div class="file-importer-info">
-                    <div class="file-importer-title">' . rex_escape($item['title']) . '</div>
-                    <form action="' . rex_url::currentBackendPage() . '" method="post">
-                        <input type="hidden" name="import" value="1">
-                        <select name="url" class="form-control file-importer-size-select">';
+            </div>
+            <div class="panel-body">
+                <div class="file-importer-results">';
         
-        foreach ($item['size'] as $key => $value) {
-            $content .= '<option value="' . rex_escape($value['url']) . '">' . rex_escape(ucfirst($key)) . '</option>';
+        foreach ($searchResults['items'] as $item) {
+            $content .= '
+                <div class="file-importer-item">
+                    <div class="file-importer-preview">
+                        ' . ($item['type'] === 'video' ? '
+                        <video controls>
+                            <source src="' . rex_escape($item['size']['tiny']['url']) . '" type="video/mp4">
+                        </video>
+                        ' : '
+                        <img src="' . rex_escape($item['preview_url']) . '" alt="' . rex_escape($item['title']) . '">
+                        ') . '
+                    </div>
+                    <div class="file-importer-info">
+                        <div class="file-importer-title">' . rex_escape($item['title']) . '</div>
+                        <form action="' . rex_url::currentBackendPage() . '" method="post">
+                            <input type="hidden" name="import" value="1">
+                            <select name="url" class="form-control file-importer-size-select">';
+            
+            foreach ($item['size'] as $key => $value) {
+                $content .= '<option value="' . rex_escape($value['url']) . '">' . rex_escape(ucfirst($key)) . '</option>';
+            }
+            
+            $content .= '
+                            </select>
+                            <input type="hidden" name="filename" value="' . rex_escape($item['title']) . '">
+                            <div class="file-importer-actions">
+                                <button type="submit" class="btn btn-primary btn-block">
+                                    <i class="rex-icon fa-download"></i> ' . rex_i18n::msg('file_importer_import') . '
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>';
         }
         
         $content .= '
-                        </select>
-                        <input type="hidden" name="filename" value="' . rex_escape($item['title']) . '">
-                        <div class="file-importer-actions">
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <i class="rex-icon fa-download"></i> ' . rex_i18n::msg('file_importer_import') . '
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>';
+        
+            // Pagination
+            if ($searchResults['total_pages'] > 1) {
+                $paginate = new rex_paginate($searchResults['total_pages'], 20 , $page, rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => '###page###']));
+                $content .= '<div class="panel-footer">' . $paginate->get() . '</div>';
+            }
+        
+        $content .= '
+        </div>';
     }
     
     $content .= '
-            </div>
-        </div>';
-    
-        // Pagination
-        if ($searchResults['total_pages'] > 1) {
-            $paginate = new rex_paginate($searchResults['total_pages'], 20 , $page, rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => '###page###']));
-            $content .= '<div class="panel-footer">' . $paginate->get() . '</div>';
-        }
-    
-    $content .= '
-    </div>';
-}
-
-$content .= '
     <!-- Attribution -->
     <div class="file-importer-attribution text-center">
         ' . rex_i18n::msg('file_importer_pixabay_attribution') . '
     </div>
 </div>';
+
+// Fragment erstellen und ausgeben
+$fragment = new rex_fragment();
+$fragment->setVar('body', $content, false);
+echo $fragment->parse('core/page/section.php');
