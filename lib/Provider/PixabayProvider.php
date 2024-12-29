@@ -35,10 +35,20 @@ class PixabayProvider extends AbstractProvider
             throw new \Exception('Pixabay API key not configured');
         }
 
+        \rex_logger::factory()->log('debug', 'Pixabay search called', [
+            'query' => $query,
+            'page' => $page,
+            'options' => $options,
+            'api_key_length' => strlen($this->config['apikey'])
+        ]);
+
         $type = $options['type'] ?? 'image';
         $cacheKey = $this->getCacheKey($query . $type, $page, $options);
         
         if ($cached = $this->getFromCache($cacheKey)) {
+            \rex_logger::factory()->log('debug', 'Returning cached results', [
+                'cache_key' => $cacheKey
+            ]);
             return $cached;
         }
 
@@ -52,7 +62,18 @@ class PixabayProvider extends AbstractProvider
         ];
 
         // Wähle die richtige API-URL basierend auf dem Typ
-        $url = ($type === 'video') ? $this->apiUrlVideos : $this->apiUrl;
+        $baseUrl = ($type === 'video') ? $this->apiUrlVideos : $this->apiUrl;
+        
+        if ($type === 'image') {
+            $params['image_type'] = 'all';
+        }
+
+        $url = $baseUrl . '?' . http_build_query($params);
+
+        \rex_logger::factory()->log('debug', 'Calling Pixabay API', [
+            'url' => $url,
+            'type' => $type
+        ]);
         
         if ($type === 'image') {
             $params['image_type'] = 'all';
@@ -71,17 +92,32 @@ class PixabayProvider extends AbstractProvider
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            
+            \rex_logger::factory()->log('debug', 'Pixabay API Response', [
+                'http_code' => $httpCode,
+                'response_preview' => substr($response, 0, 1000),
+                'curl_error' => curl_error($ch),
+                'curl_errno' => curl_errno($ch)
+            ]);
 
             if ($response === false) {
-                throw new \Exception(curl_error($ch));
+                throw new \Exception('Curl error: ' . curl_error($ch));
             }
 
             curl_close($ch);
 
             $data = json_decode($response, true);
             if (!isset($data['hits'])) {
+                \rex_logger::factory()->log('error', 'Invalid API Response', [
+                    'response' => $response
+                ]);
                 throw new \Exception('Invalid response from Pixabay API');
             }
+
+            \rex_logger::factory()->log('debug', 'Parsed API Response', [
+                'total_hits' => $data['totalHits'],
+                'hits_count' => count($data['hits'])
+            ]);
 
             $results = [
                 'items' => array_map(function($item) use ($type) {
