@@ -1,0 +1,62 @@
+file_importer_title = Datei-Importer
+file_importer_images = Medien
+file_importer_providers = Anbieter
+file_importer_settings = Einstellungen
+
+# Provider
+file_importer_provider_pixabay = Pixabay
+file_importer_provider_unsplash = Unsplash
+
+# Konfiguration
+file_importer_config = Einstellungen
+file_importer_config_saved = Einstellungen wurden gespeichert
+file_importer_no_provider_configured = Bitte konfigurieren Sie mindestens einen Anbieter in den Einstellungen.
+
+# Pixabay Einstellungen
+file_importer_pixabay_apikey = Pixabay API-Key
+file_importer_pixabay_apikey_notice = Der API-Key kann kostenlos unter https://pixabay.com/api/docs/ beantragt werden
+
+# UI-Elemente
+file_importer_search = Suchen
+file_importer_search_placeholder = Suchbegriff eingeben...
+file_importer_no_results = Keine Ergebnisse gefunden
+file_importer_load_more = Mehr laden
+file_importer_preview = Vorschau
+file_importer_import = Importieren
+file_importer_results_count = {0} Ergebnisse gefunden
+
+# Import
+file_importer_target_category = Zielkategorie
+file_importer_category_notice = In welche Kategorie sollen die Dateien importiert werden?
+file_importer_importing = Wird importiert...
+file_importer_import_success = Die Datei wurde erfolgreich importiert
+file_importer_import_error = Fehler beim Import der Datei
+file_importer_import_exists = Die Datei existiert bereits im Medienpool
+
+# Bildgrößen
+file_importer_size_preview = Vorschau
+file_importer_size_web = Web
+file_importer_size_large = Groß
+file_importer_size_original = Original
+
+# Status und Fehlermeldungen
+file_importer_loading = Lade Ergebnisse...
+file_importer_error_search = Fehler bei der Suche
+file_importer_error_download = Fehler beim Download
+file_importer_error_import = Fehler beim Import
+file_importer_error_api = API-Fehler: {0}
+file_importer_error_config = Konfigurationsfehler: {0}
+
+# Cache
+file_importer_cache_cleared = Cache wurde geleert
+file_importer_clear_cache = Cache leeren
+
+# Attribution
+file_importer_pixabay_attribution = Bilder bereitgestellt von Pixabay. Die Nutzung unterliegt den Pixabay-Lizenzbedingungen.
+file_importer_unsplash_attribution = Fotos von Unsplash. Die Nutzung unterliegt den Unsplash-Lizenzbedingungen.
+
+# Provider Status
+file_importer_provider_active = Aktiv
+file_importer_provider_inactive = Inaktiv
+file_importer_provider_settings = Provider-Einstellungen
+file_importer_provider_save = Provider speichern
