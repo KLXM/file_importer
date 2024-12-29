@@ -121,7 +121,13 @@ if ($searchResults && isset($searchResults['items'])) {
         $content .= '
             <div class="file-importer-item">
                 <div class="file-importer-preview">
+                    ' . ($item['type'] === 'video' ? '
+                    <video controls>
+                        <source src="' . rex_escape($item['size']['tiny']['url']) . '" type="video/mp4">
+                    </video>
+                    ' : '
                     <img src="' . rex_escape($item['preview_url']) . '" alt="' . rex_escape($item['title']) . '">
+                    ') . '
                 </div>
                 <div class="file-importer-info">
                     <div class="file-importer-title">' . rex_escape($item['title']) . '</div>
