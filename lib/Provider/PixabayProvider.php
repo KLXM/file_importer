@@ -47,16 +47,28 @@ class PixabayProvider extends AbstractProvider
             'page' => $page,
             'per_page' => $this->itemsPerPage,
             'image_type' => 'all',
+            'safesearch' => 'true',
             'lang' => \rex_i18n::getLanguage()
         ];
 
         $url = $this->apiUrl . '?' . http_build_query($params);
 
         try {
-            $response = file_get_contents($url);
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_TIMEOUT => 20
+            ]);
+
+            $response = curl_exec($ch);
+            
             if ($response === false) {
-                throw new \Exception('Failed to fetch data from Pixabay API');
+                throw new \Exception(curl_error($ch));
             }
+            
+            curl_close($ch);
 
             $data = json_decode($response, true);
             if (!isset($data['hits'])) {
