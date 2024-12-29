@@ -19,7 +19,8 @@
     overflow: hidden;
 }
 
-.file-importer-preview img {
+.file-importer-preview img,
+.file-importer-preview video {
     position: absolute;
     top: 0;
     left: 0;
