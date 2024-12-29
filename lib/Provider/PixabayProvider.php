@@ -71,6 +71,7 @@ class PixabayProvider extends AbstractProvider
             'safesearch' => 'true',
             'lang' => 'de'
         ];
+        dump($params);
 
         if ($type === 'image') {
             $params['image_type'] = 'all';
