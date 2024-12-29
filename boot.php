@@ -15,7 +15,16 @@ if (\rex::isBackend() && \rex::getUser()) {
     // Assets nur auf der File-Importer-Seite einbinden
     if (\rex_be_controller::getCurrentPage() == 'file_importer/main') {
         \rex_view::addCssFile($this->getAssetsUrl('file_importer.css'));
+        \rex_view::addJsFile('assets/jquery.js');
         \rex_view::addJsFile($this->getAssetsUrl('file_importer.js'));
+        
+        // Test-Script
+        echo '<script>
+            $(document).ready(function() {
+                console.log("File Importer JS loaded!");
+                console.log("jQuery version:", $.fn.jquery);
+            });
+        </script>';
     }
 
     // AJAX Handler für API Anfragen
