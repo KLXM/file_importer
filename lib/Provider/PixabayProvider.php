@@ -1,7 +1,3 @@
-Okay, das ist sehr hilfreich. Die Art und Weise, wie die Konfiguration gespeichert ist, deutet auf ein potenzielles Problem hin. Es sieht so aus, als ob der API-Key innerhalb eines JSON-Strings in der Datenbank gespeichert ist. Das Problem ist wahrscheinlich, dass das getConfig() von Redaxo den gesamten JSON-String zurückgibt und nicht nur den API-Key.
-
-Hier ist die Anpassung, um das Problem zu beheben:
-
 <?php
 namespace Klxm\FileImporter\Provider;
 
