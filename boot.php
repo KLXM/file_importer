@@ -67,9 +67,10 @@ if (\rex::isBackend() && \rex::getUser()) {
 // Cache leeren wenn Provider-Einstellungen gespeichert werden
 \rex_extension::register('REX_FORM_SAVED', function($ep) {
     if (strpos(\rex_be_controller::getCurrentPage(), 'file_importer') === 0) {
-        // Cache-Keys mit dem Prefix löschen
+        // Cache-Files löschen
         $cacheFolder = \rex_path::addonCache('file_importer');
         if (is_dir($cacheFolder)) {
             array_map('unlink', glob($cacheFolder . '/*.cache'));
+        }
     }
 });
