@@ -2,17 +2,21 @@
 namespace Klxm\FileImporter;
 
 use rex_i18n;
+use rex_url;
+use rex_view;
+use rex_media_category_select;
+use rex_fragment;
 
 // Prüfe ob mindestens ein Provider konfiguriert ist
 $provider = $this->providers['pixabay'] ?? null;
 if (!$provider || !$provider->isConfigured()) {
-    echo \rex_view::error(rex_i18n::msg('file_importer_no_provider_configured'));
+    echo rex_view::error(rex_i18n::msg('file_importer_no_provider_configured'));
     echo '<p><a href="'.rex_url::backendPage('file_importer/config').'" class="btn btn-primary">'.rex_i18n::msg('file_importer_goto_config').'</a></p>';
     return;
 }
 
 // Medienpool Kategorien laden
-$cats_sel = new \rex_media_category_select();
+$cats_sel = new rex_media_category_select();
 $cats_sel->setStyle('class="form-control"');
 $cats_sel->setName('category_id');
 $cats_sel->setId('rex-mediapool-category');
@@ -86,37 +90,9 @@ $content = '
     <div class="file-importer-attribution text-center">
         ' . rex_i18n::msg('file_importer_pixabay_attribution') . '
     </div>
-</div>
-
-<!-- Template für Ergebnis-Items -->
-<script type="text/template" id="file-importer-template">
-    <div class="file-importer-item">
-        <div class="file-importer-preview">
-            <img src="{preview_url}" alt="{title}">
-        </div>
-        <div class="file-importer-info">
-            <div class="file-importer-title">{title}</div>
-            <select class="file-importer-size-select form-control">
-                <!-- Wird dynamisch befüllt -->
-            </select>
-            <div class="file-importer-actions">
-                <button class="btn btn-default file-importer-preview-btn">
-                    <i class="rex-icon fa-eye"></i>
-                </button>
-                <button class="btn btn-primary file-importer-import-btn">
-                    <i class="rex-icon fa-download"></i>
-                </button>
-            </div>
-            <div class="progress file-importer-progress">
-                <div class="progress-bar progress-bar-striped active" role="progressbar" style="width: 100%">
-                    ' . rex_i18n::msg('file_importer_importing') . '
-                </div>
-            </div>
-        </div>
-    </div>
-</script>';
+</div>';
 
 // Fragment erstellen und ausgeben
-$fragment = new \rex_fragment();
+$fragment = new rex_fragment();
 $fragment->setVar('body', $content, false);
 echo $fragment->parse('core/page/section.php');
