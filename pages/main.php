@@ -23,11 +23,11 @@ if (!$provider || !$provider->isConfigured()) {
 $searchResults = [];
 $searchQuery = rex_get('query', 'string', '');
 $searchType = rex_get('type', 'string', 'image');
-$page = max(1, rex_get('page', 'int', 1));
+$p = max(1, rex_get('p', 'int', 1));
 
 if ($searchQuery) {
     try {
-        $searchResults = $provider->search($searchQuery, $page, ['type' => $searchType]);
+        $searchResults = $provider->search($searchQuery, $p, ['type' => $searchType]);
     } catch (\Exception $e) {
         echo rex_view::error($e->getMessage());
     }
@@ -119,7 +119,7 @@ $content = '
         $content .= '<div class="alert alert-info">Debug: ';
         $content .= 'Query: ' . rex_escape($searchQuery) . ', ';
         $content .= 'Type: ' . rex_escape($searchType) . ', ';
-        $content .= 'Page: ' . $page;
+        $content .= 'Page: ' . $p;
         $content .= '</div>';
     }
     
@@ -176,26 +176,26 @@ $content = '
         
             // Pagination
         if ($searchResults['total_pages'] > 1) {
-            $pager = new rex_pager(20, 'page');
+            $pager = new rex_pager(20, 'p');
             $pager->setRowCount($searchResults['total']);
-             $pager->setPage($page-1);
+             $pager->setPage($p-1);
 
            $content .= '<div class="panel-footer"><nav aria-label="Page navigation"><ul class="pagination">';
 
             if ($pager->getCurrentPage() > $pager->getFirstPage()) {
-                $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $pager->getPrevPage() + 1]).'">«</a></li>';
+                $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => $pager->getPrevPage() + 1]).'">«</a></li>';
             }
             
             for ($i = $pager->getFirstPage(); $i <= $pager->getLastPage(); $i++) {
                 if ($pager->isActivePage($i)) {
                     $content .= '<li class="active"><span>'. ($i+1).'</span></li>';
                 } else {
-                      $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => ($i + 1)]).'">'. ($i+1) .'</a></li>';
+                      $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => ($i + 1)]).'">'. ($i+1) .'</a></li>';
                 }
             }
 
             if ($pager->getCurrentPage() < $pager->getLastPage()) {
-                 $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'page' => $pager->getNextPage() + 1]).'">»</a></li>';
+                 $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => $pager->getNextPage() + 1]).'">»</a></li>';
             }
            
             $content .= '</ul></nav></div>';
