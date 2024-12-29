@@ -10,13 +10,11 @@ class PixabayProvider extends AbstractProvider
     public function __construct()
     {
         $this->loadConfig();
-        dump('Config loaded:', $this->config);
     }
 
     protected function loadConfig(): void
     {
         $this->config = \rex_addon::get('file_importer')->getConfig('pixabay') ?? [];
-        dump('Loading config from addon:', \rex_addon::get('file_importer')->getConfig());
     }
 
     public function getName(): string
@@ -26,9 +24,7 @@ class PixabayProvider extends AbstractProvider
 
     public function isConfigured(): bool
     {
-        $configured = isset($this->config['apikey']) && !empty($this->config['apikey']);
-        dump('is configured?', $configured, $this->config);
-        return $configured;
+        return isset($this->config['apikey']) && !empty($this->config['apikey']);
     }
 
     public function getConfigFields(): array
@@ -51,18 +47,8 @@ class PixabayProvider extends AbstractProvider
 
         $type = $options['type'] ?? 'image';
         
-        // Debug-Log für Suchparameter
-        dump('Search parameters:', [
-            'query' => $query,
-            'page' => $page,
-            'type' => $type,
-            'config' => $this->config
-        ]);
-
-        // Basis-URL basierend auf dem Typ
         $baseUrl = ($type === 'video') ? $this->apiUrlVideos : $this->apiUrl;
         
-        // API Parameter
         $params = [
             'key' => $this->config['apikey'],
             'q' => $query,
@@ -71,17 +57,12 @@ class PixabayProvider extends AbstractProvider
             'safesearch' => 'true',
             'lang' => 'de'
         ];
-        dump($params);
 
         if ($type === 'image') {
             $params['image_type'] = 'all';
         }
 
         $url = $baseUrl . '?' . http_build_query($params);
-        
-        // Debug URL (ohne API Key)
-        $debugUrl = preg_replace('/key=([^&]+)/', 'key=XXXXX', $url);
-        dump('API URL:', $debugUrl);
 
         try {
             $ch = curl_init();
@@ -103,7 +84,6 @@ class PixabayProvider extends AbstractProvider
 
             $data = json_decode($response, true);
             if (!isset($data['hits'])) {
-                dump('API Error Response:', $data);
                 throw new \Exception('Invalid response from Pixabay API');
             }
 
@@ -147,7 +127,6 @@ class PixabayProvider extends AbstractProvider
             return $results;
 
         } catch (\Exception $e) {
-            dump('API Error:', $e->getMessage());
             throw $e;
         }
     }
@@ -160,7 +139,6 @@ class PixabayProvider extends AbstractProvider
 
         $filename = $this->sanitizeFilename($filename);
         
-        // Bestimme die Dateiendung basierend auf der URL
         $extension = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION);
         if (!$extension) {
             $extension = strpos($url, 'vimeocdn.com') !== false ? 'mp4' : 'jpg';
