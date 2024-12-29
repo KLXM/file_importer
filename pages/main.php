@@ -152,6 +152,9 @@ $content = '
                         <div class="file-importer-title">' . rex_escape($item['title']) . '</div>
                         <form action="' . rex_url::currentBackendPage() . '" method="post">
                             <input type="hidden" name="import" value="1">
+                            <input type="hidden" name="query" value="' . rex_escape($searchQuery) . '">
+                            <input type="hidden" name="type" value="' . rex_escape($searchType) . '">
+                             <input type="hidden" name="p" value="' . $p . '">
                             <select name="url" class="form-control file-importer-size-select">';
             
             foreach ($item['size'] as $key => $value) {
