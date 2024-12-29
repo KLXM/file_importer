@@ -35,23 +35,20 @@ class PixabayProvider extends AbstractProvider
             throw new \Exception('Pixabay API key not configured');
         }
 
-        \rex_logger::factory()->log('debug', 'Pixabay search called', [
+        $type = $options['type'] ?? 'image';
+        
+        // Debug-Log für Suchparameter
+        \rex_logger::factory()->log('debug', 'Pixabay Search Parameters', [
             'query' => $query,
             'page' => $page,
-            'options' => $options,
-            'api_key_length' => strlen($this->config['apikey'])
+            'type' => $type,
+            'api_key_set' => !empty($this->config['apikey'])
         ]);
 
-        $type = $options['type'] ?? 'image';
-        $cacheKey = $this->getCacheKey($query . $type, $page, $options);
+        // Basis-URL basierend auf dem Typ
+        $baseUrl = ($type === 'video') ? $this->apiUrlVideos : $this->apiUrl;
         
-        if ($cached = $this->getFromCache($cacheKey)) {
-            \rex_logger::factory()->log('debug', 'Returning cached results', [
-                'cache_key' => $cacheKey
-            ]);
-            return $cached;
-        }
-
+        // API Parameter
         $params = [
             'key' => $this->config['apikey'],
             'q' => $query,
@@ -61,25 +58,17 @@ class PixabayProvider extends AbstractProvider
             'lang' => \rex_i18n::getLanguage()
         ];
 
-        // Wähle die richtige API-URL basierend auf dem Typ
-        $baseUrl = ($type === 'video') ? $this->apiUrlVideos : $this->apiUrl;
-        
         if ($type === 'image') {
             $params['image_type'] = 'all';
         }
 
         $url = $baseUrl . '?' . http_build_query($params);
 
-        \rex_logger::factory()->log('debug', 'Calling Pixabay API', [
-            'url' => $url,
-            'type' => $type
+        // Debug-Log für API-Aufruf
+        \rex_logger::factory()->log('debug', 'Pixabay API Call', [
+            'url' => preg_replace('/key=([^&]+)/', 'key=XXXXX', $url), // API-Key verstecken
+            'full_params' => $params
         ]);
-        
-        if ($type === 'image') {
-            $params['image_type'] = 'all';
-        }
-
-        $url .= '?' . http_build_query($params);
 
         try {
             $ch = curl_init();
@@ -92,12 +81,12 @@ class PixabayProvider extends AbstractProvider
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            
+
+            // Debug-Log für API-Response
             \rex_logger::factory()->log('debug', 'Pixabay API Response', [
                 'http_code' => $httpCode,
-                'response_preview' => substr($response, 0, 1000),
                 'curl_error' => curl_error($ch),
-                'curl_errno' => curl_errno($ch)
+                'response_preview' => $response ? substr($response, 0, 500) : 'Empty response'
             ]);
 
             if ($response === false) {
@@ -113,11 +102,6 @@ class PixabayProvider extends AbstractProvider
                 ]);
                 throw new \Exception('Invalid response from Pixabay API');
             }
-
-            \rex_logger::factory()->log('debug', 'Parsed API Response', [
-                'total_hits' => $data['totalHits'],
-                'hits_count' => count($data['hits'])
-            ]);
 
             $results = [
                 'items' => array_map(function($item) use ($type) {
@@ -156,11 +140,21 @@ class PixabayProvider extends AbstractProvider
                 'total_pages' => ceil($data['totalHits'] / $this->itemsPerPage)
             ];
 
-            $this->setCache($cacheKey, $results);
+            // Debug-Log für verarbeitete Ergebnisse
+            \rex_logger::factory()->log('debug', 'Pixabay Search Results', [
+                'total_hits' => $data['totalHits'],
+                'items_count' => count($results['items']),
+                'current_page' => $page,
+                'total_pages' => $results['total_pages']
+            ]);
+
             return $results;
 
         } catch (\Exception $e) {
-            \rex_logger::logException($e);
+            \rex_logger::factory()->log('error', 'Pixabay Search Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             throw $e;
         }
     }
