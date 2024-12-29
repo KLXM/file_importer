@@ -70,7 +70,7 @@ class PixabayProvider extends AbstractProvider
         }
         
         error_log("API Key: " . $this->config['apikey']);
-        $url = $baseUrl . '?' . http_build_query($params);
+        $url = $baseUrl . '?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
         error_log("API URL: " . $url);
         
         try {
