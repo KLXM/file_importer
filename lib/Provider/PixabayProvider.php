@@ -43,7 +43,7 @@ class PixabayProvider extends AbstractProvider
 
         $params = [
             'key' => $this->config['apikey'],
-            'q' => urlencode($query),
+            'q' => $query, // http_build_query wird die Kodierung übernehmen
             'page' => $page,
             'per_page' => $this->itemsPerPage,
             'image_type' => 'all',
@@ -52,6 +52,13 @@ class PixabayProvider extends AbstractProvider
         ];
 
         $url = $this->apiUrl . '?' . http_build_query($params);
+        
+        // Debug-Log für die API-Anfrage
+        \rex_logger::factory()->log('debug', 'Pixabay API Request', [
+            'url' => $url,
+            'query' => $query,
+            'page' => $page
+        ]);
 
         try {
             $ch = curl_init();
