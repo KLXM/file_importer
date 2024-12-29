@@ -62,8 +62,10 @@ $(document).on('rex:ready', function() {
             this.loading = true;
             this.updateStatus('loading');
             
+            console.log('Searching for:', this.currentQuery); // Debug
+            
             $.ajax({
-                url: window.location.pathname,
+                url: window.location.href,
                 data: {
                     file_importer_api: 1,
                     action: 'search',
