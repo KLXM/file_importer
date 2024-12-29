@@ -105,6 +105,12 @@ class PixabayProvider extends AbstractProvider
                 \rex_logger::factory()->log('error', "Invalid API Response:\n" . $response);
                 throw new \Exception('Invalid response from Pixabay API');
             }
+            
+            // Debug der API-Antwort
+            dump('Raw API Response', [
+                'total' => $data['totalHits'],
+                'sample_hits' => array_slice($data['hits'], 0, 3)
+            ]);
 
             $results = [
                 'items' => array_map(function($item) use ($type) {
