@@ -4,6 +4,7 @@ namespace Klxm\FileImporter\Provider;
 class PixabayProvider extends AbstractProvider
 {
     protected string $apiUrl = 'https://pixabay.com/api/';
+    protected string $apiUrlVideos = 'https://pixabay.com/api/videos/';
     protected int $itemsPerPage = 20;
 
     public function getName(): string
@@ -34,40 +35,31 @@ class PixabayProvider extends AbstractProvider
             throw new \Exception('Pixabay API key not configured');
         }
 
-        $cacheKey = $this->getCacheKey($query, $page, $options);
-        $cached = $this->getFromCache($cacheKey);
-
-        if ($cached !== false) {
+        $type = $options['type'] ?? 'image';
+        $cacheKey = $this->getCacheKey($query . $type, $page, $options);
+        
+        if ($cached = $this->getFromCache($cacheKey)) {
             return $cached;
         }
 
         $params = [
             'key' => $this->config['apikey'],
-            'q' => $query, // http_build_query wird die Kodierung übernehmen
+            'q' => $query,
             'page' => $page,
             'per_page' => $this->itemsPerPage,
-            'image_type' => 'all',
             'safesearch' => 'true',
             'lang' => \rex_i18n::getLanguage()
         ];
 
-        $url = $this->apiUrl . '?' . http_build_query($params);
+        // Wähle die richtige API-URL basierend auf dem Typ
+        $url = ($type === 'video') ? $this->apiUrlVideos : $this->apiUrl;
         
-        // Debug-Log für die API-Anfrage
-        \rex_logger::factory()->log('debug', 'Pixabay API Request', [
-            'url' => $url,
-            'query' => $query,
-            'page' => $page
-        ]);
+        if ($type === 'image') {
+            $params['image_type'] = 'all';
+        }
 
-        // Debug-Log für die API-Anfrage
-        \rex_logger::factory()->log('debug', 'Pixabay API Request', [
-            'url' => $url,
-            'query' => $query,
-            'page' => $page,
-            'params' => $params
-        ]);
-        
+        $url .= '?' . http_build_query($params);
+
         try {
             $ch = curl_init();
             curl_setopt_array($ch, [
@@ -79,21 +71,11 @@ class PixabayProvider extends AbstractProvider
 
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            
-            // Debug der API-Antwort
-            \rex_logger::factory()->log('debug', 'Pixabay API Response', [
-                'url' => $url,
-                'http_code' => $httpCode,
-                'response_length' => strlen($response),
-                'response_preview' => substr($response, 0, 1000),
-                'curl_error' => curl_error($ch),
-                'curl_errno' => curl_errno($ch)
-            ]);
-            
+
             if ($response === false) {
                 throw new \Exception(curl_error($ch));
             }
-            
+
             curl_close($ch);
 
             $data = json_decode($response, true);
@@ -102,22 +84,36 @@ class PixabayProvider extends AbstractProvider
             }
 
             $results = [
-                'items' => array_map(function($item) {
-                    return [
-                        'id' => $item['id'],
-                        'preview_url' => $item['webformatURL'],
-                        'download_url' => $item['largeImageURL'],
-                        'title' => $item['tags'],
-                        'author' => $item['user'],
-                        'width' => $item['webformatWidth'],
-                        'height' => $item['webformatHeight'],
-                        'size' => [
-                            'preview' => ['url' => $item['previewURL']],
-                            'web' => ['url' => $item['webformatURL']],
-                            'large' => ['url' => $item['largeImageURL']],
-                            'original' => ['url' => $item['largeImageURL']]
-                        ]
-                    ];
+                'items' => array_map(function($item) use ($type) {
+                    if ($type === 'video') {
+                        return [
+                            'id' => $item['id'],
+                            'preview_url' => $item['picture_id'] ? "https://i.vimeocdn.com/video/{$item['picture_id']}_640x360.jpg" : '',
+                            'title' => $item['tags'],
+                            'author' => $item['user'],
+                            'type' => 'video',
+                            'size' => [
+                                'tiny' => ['url' => $item['videos']['tiny']['url']],
+                                'small' => ['url' => $item['videos']['small']['url']],
+                                'medium' => ['url' => $item['videos']['medium']['url']],
+                                'large' => ['url' => $item['videos']['large']['url'] ?? $item['videos']['medium']['url']]
+                            ]
+                        ];
+                    } else {
+                        return [
+                            'id' => $item['id'],
+                            'preview_url' => $item['webformatURL'],
+                            'title' => $item['tags'],
+                            'author' => $item['user'],
+                            'type' => 'image',
+                            'size' => [
+                                'preview' => ['url' => $item['previewURL']],
+                                'web' => ['url' => $item['webformatURL']],
+                                'large' => ['url' => $item['largeImageURL']],
+                                'original' => ['url' => $item['imageURL'] ?? $item['largeImageURL']]
+                            ]
+                        ];
+                    }
                 }, $data['hits']),
                 'total' => $data['totalHits'],
                 'page' => $page,
@@ -140,9 +136,14 @@ class PixabayProvider extends AbstractProvider
         }
 
         $filename = $this->sanitizeFilename($filename);
-        if (!pathinfo($filename, PATHINFO_EXTENSION)) {
-            $filename .= '.jpg';
+        
+        // Bestimme die Dateiendung basierend auf der URL
+        $extension = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION);
+        if (!$extension) {
+            $extension = strpos($url, 'vimeocdn.com') !== false ? 'mp4' : 'jpg';
         }
+        
+        $filename = $filename . '.' . $extension;
 
         return $this->downloadFile($url, $filename);
     }
