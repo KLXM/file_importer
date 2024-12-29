@@ -6,7 +6,8 @@ use rex_i18n;
 // Prüfe ob mindestens ein Provider konfiguriert ist
 $provider = $this->providers['pixabay'] ?? null;
 if (!$provider || !$provider->isConfigured()) {
-    echo \rex_view::warning(rex_i18n::msg('file_importer_no_provider_configured'));
+    echo \rex_view::error(rex_i18n::msg('file_importer_no_provider_configured'));
+    echo '<p><a href="'.rex_url::backendPage('file_importer/config').'" class="btn btn-primary">'.rex_i18n::msg('file_importer_goto_config').'</a></p>';
     return;
 }
 
