@@ -60,6 +60,14 @@ class PixabayProvider extends AbstractProvider
             'page' => $page
         ]);
 
+        // Debug-Log für die API-Anfrage
+        \rex_logger::factory()->log('debug', 'Pixabay API Request', [
+            'url' => $url,
+            'query' => $query,
+            'page' => $page,
+            'params' => $params
+        ]);
+        
         try {
             $ch = curl_init();
             curl_setopt_array($ch, [
@@ -77,8 +85,9 @@ class PixabayProvider extends AbstractProvider
                 'url' => $url,
                 'http_code' => $httpCode,
                 'response_length' => strlen($response),
-                'response_preview' => substr($response, 0, 500),
-                'query' => $query
+                'response_preview' => substr($response, 0, 1000),
+                'curl_error' => curl_error($ch),
+                'curl_errno' => curl_errno($ch)
             ]);
             
             if ($response === false) {
