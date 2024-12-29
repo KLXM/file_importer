@@ -82,6 +82,10 @@ $content = '
                     <form method="get" action="' . rex_url::currentBackendPage() . '">
                         <input type="hidden" name="page" value="file_importer/main">
                         <div class="input-group">
+                            <select name="type" class="form-control" style="width: 100px; border-right: 0;">
+                                <option value="image" ' . (rex_get('type', 'string', 'image') === 'image' ? 'selected' : '') . '>Bilder</option>
+                                <option value="video" ' . (rex_get('type', 'string') === 'video' ? 'selected' : '') . '>Videos</option>
+                            </select>
                             <input type="text" 
                                    class="form-control" 
                                    name="query" 
