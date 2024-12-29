@@ -8,7 +8,10 @@ $(document).on('rex:ready', function() {
         
         init: function() {
             this.bindEvents();
-            this.initInfiniteScroll();
+            
+            // Nicht mehr automatisch laden
+            $('#file-importer-results').empty();
+            $('#file-importer-status').empty();
         },
         
         bindEvents: function() {
@@ -22,45 +25,35 @@ $(document).on('rex:ready', function() {
                 this.loadResults();
             });
             
-            // Vorschau Button
-            $(document).on('click', '.file-importer-preview-btn', (e) => {
-                e.preventDefault();
-                const btn = $(e.currentTarget);
-                const item = btn.closest('.file-importer-item');
-                this.showPreview(item);
-            });
-            
             // Import Button
             $(document).on('click', '.file-importer-import-btn', (e) => {
                 e.preventDefault();
                 const btn = $(e.currentTarget);
                 const item = btn.closest('.file-importer-item');
-                this.importFile(item);
+                const selectSize = item.find('.file-importer-size-select');
+                const url = selectSize.find('option:selected').data('url');
+                const filename = item.find('.file-importer-title').text();
+                
+                this.importFile(url, filename, btn);
             });
             
-            // Bildgröße ändern
+            // Größenauswahl ändern
             $(document).on('change', '.file-importer-size-select', function() {
                 const url = $(this).find('option:selected').data('url');
                 $(this).closest('.file-importer-item').data('download-url', url);
             });
-        },
-        
-        initInfiniteScroll: function() {
-            const options = {
-                root: null,
-                rootMargin: '0px',
-                threshold: 0.1
-            };
-            
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting && this.hasMore && !this.loading) {
+
+            // Lazy Load für weitere Seiten
+            $(window).on('scroll', () => {
+                if (this.hasMore && !this.loading) {
+                    const scrollPos = $(window).scrollTop() + $(window).height();
+                    const threshold = $(document).height() - 100;
+                    
+                    if (scrollPos > threshold) {
                         this.loadMore();
                     }
-                });
-            }, options);
-            
-            observer.observe($('#file-importer-loadmore')[0]);
+                }
+            });
         },
         
         loadResults: function() {
@@ -70,9 +63,8 @@ $(document).on('rex:ready', function() {
             this.updateStatus('loading');
             
             $.ajax({
-                url: 'index.php',
+                url: window.location.pathname,
                 data: {
-                    page: 'file_importer/main',
                     file_importer_api: 1,
                     action: 'search',
                     provider: this.currentProvider,
@@ -83,7 +75,7 @@ $(document).on('rex:ready', function() {
                     if (response.success) {
                         this.renderResults(response.data);
                     } else {
-                        this.showError(response.error);
+                        this.showError(response.error || 'Unknown error');
                     }
                 },
                 error: (xhr, status, error) => {
@@ -96,93 +88,63 @@ $(document).on('rex:ready', function() {
         },
         
         loadMore: function() {
-            this.currentPage++;
-            this.loadResults();
+            if (this.hasMore && !this.loading) {
+                this.currentPage++;
+                this.loadResults();
+            }
         },
         
         renderResults: function(data) {
             const container = $('#file-importer-results');
-            const template = $('#file-importer-template').html();
+            let html = '';
             
             data.items.forEach(item => {
-                const html = template
-                    .replace(/\{preview_url\}/g, item.preview_url)
-                    .replace(/\{title\}/g, item.title)
-                    .replace(/\{author\}/g, item.author)
-                    .replace(/\{download_url\}/g, item.download_url);
-                    
-                const element = $(html);
-                
-                // Größenauswahl aufbauen
-                const sizeSelect = element.find('.file-importer-size-select');
-                Object.entries(item.size).forEach(([key, value]) => {
-                    sizeSelect.append(
-                        $('<option></option>')
-                            .attr('value', key)
-                            .attr('data-url', value.url)
-                            .text(key.charAt(0).toUpperCase() + key.slice(1))
-                    );
-                });
-                
-                container.append(element);
+                html += `
+                    <div class="file-importer-item">
+                        <div class="file-importer-preview">
+                            <img src="${item.preview_url}" alt="${item.title}" loading="lazy">
+                        </div>
+                        <div class="file-importer-info">
+                            <div class="file-importer-title">${item.title}</div>
+                            <select class="form-control file-importer-size-select">
+                                ${Object.entries(item.size).map(([key, value]) => `
+                                    <option value="${key}" data-url="${value.url}">
+                                        ${key.charAt(0).toUpperCase() + key.slice(1)}
+                                    </option>
+                                `).join('')}
+                            </select>
+                            <div class="file-importer-actions">
+                                <button class="btn btn-primary btn-block file-importer-import-btn">
+                                    <i class="rex-icon fa-download"></i> Importieren
+                                </button>
+                            </div>
+                            <div class="progress file-importer-progress" style="display: none;">
+                                <div class="progress-bar progress-bar-striped active" role="progressbar" style="width: 100%">
+                                    Importiere...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
+            
+            container.append(html);
             
             this.hasMore = data.page < data.total_pages;
             this.updateStatus('results', data.total);
         },
         
-        showPreview: function(item) {
-            const previewUrl = item.find('img').attr('src');
-            const title = item.find('.file-importer-title').text();
-            
-            const modal = $(`
-                <div class="modal fade file-importer-preview-modal" tabindex="-1" role="dialog">
-                    <div class="modal-dialog modal-lg" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <button type="button" class="close" data-dismiss="modal">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                                <h4 class="modal-title">${title}</h4>
-                            </div>
-                            <div class="modal-body">
-                                <img src="${previewUrl}" alt="${title}">
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">
-                                    Schließen
-                                </button>
-                                <button type="button" class="btn btn-primary file-importer-import-btn">
-                                    <i class="rex-icon fa-download"></i> Importieren
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `);
-            
-            modal.modal('show');
-            modal.find('.file-importer-import-btn').on('click', () => {
-                this.importFile(item);
-                modal.modal('hide');
-            });
-        },
-        
-        importFile: function(item) {
-            const btn = item.find('.file-importer-import-btn');
-            const progress = item.find('.file-importer-progress');
-            const url = item.find('.file-importer-size-select option:selected').data('url');
-            const filename = item.find('.file-importer-title').text();
+        importFile: function(url, filename, btn) {
+            const progress = btn.closest('.file-importer-item').find('.file-importer-progress');
             const categoryId = $('#rex-mediapool-category').val();
             
             btn.prop('disabled', true);
             progress.show();
             
             $.ajax({
-                url: 'index.php',
+                url: window.location.pathname,
                 method: 'POST',
                 data: {
-                    page: 'file_importer/main',
                     file_importer_api: 1,
                     action: 'download',
                     provider: this.currentProvider,
@@ -193,14 +155,18 @@ $(document).on('rex:ready', function() {
                 success: (response) => {
                     if (response.success) {
                         this.showSuccess('Die Datei wurde erfolgreich importiert');
+                        setTimeout(() => {
+                            btn.prop('disabled', false);
+                            progress.hide();
+                        }, 1000);
                     } else {
-                        this.showError(response.error || 'Import failed');
+                        this.showError(response.error || 'Import fehlgeschlagen');
+                        btn.prop('disabled', false);
+                        progress.hide();
                     }
                 },
                 error: (xhr, status, error) => {
                     this.showError('Error importing file: ' + error);
-                },
-                complete: () => {
                     btn.prop('disabled', false);
                     progress.hide();
                 }
@@ -216,7 +182,7 @@ $(document).on('rex:ready', function() {
                     break;
                 case 'results':
                     if (total > 0) {
-                        status.text(`${total} Ergebnisse gefunden`);
+                        status.text(total + ' Ergebnisse gefunden');
                     } else {
                         status.text('Keine Ergebnisse gefunden');
                     }
