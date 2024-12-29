@@ -24,6 +24,7 @@ $searchResults = [];
 $searchQuery = rex_get('query', 'string', '');
 $searchType = rex_get('type', 'string', 'image');
 $p = max(1, rex_get('p', 'int', 1));
+$page = rex_get('page', 'string', 'file_importer/main');
 
 if ($searchQuery) {
     try {
@@ -85,7 +86,7 @@ $content = '
                 </header>
                 <div class="panel-body">
                     <form method="get" action="' . rex_url::currentBackendPage() . '" class="form-inline">
-                         <input type="hidden" name="page" value="file_importer/main">
+                        <input type="hidden" name="page" value="' . rex_escape($page) . '">
                         <input type="hidden" name="p" value="' . $p . '">
                         <div class="form-group" style="width: 100%;">
                             <div class="input-group" style="width: 100%;">
@@ -120,7 +121,8 @@ $content = '
         $content .= '<div class="alert alert-info">Debug: ';
         $content .= 'Query: ' . rex_escape($searchQuery) . ', ';
         $content .= 'Type: ' . rex_escape($searchType) . ', ';
-        $content .= 'Page: ' . $p;
+         $content .= 'Page: ' . $page . ', ';
+        $content .= 'P: ' . $p;
         $content .= '</div>';
     }
     
@@ -155,6 +157,7 @@ $content = '
                             <input type="hidden" name="query" value="' . rex_escape($searchQuery) . '">
                             <input type="hidden" name="type" value="' . rex_escape($searchType) . '">
                              <input type="hidden" name="p" value="' . $p . '">
+                            <input type="hidden" name="page" value="' . rex_escape($page) . '">
                             <select name="url" class="form-control file-importer-size-select">';
             
             foreach ($item['size'] as $key => $value) {
@@ -187,19 +190,19 @@ $content = '
            $content .= '<div class="panel-footer"><nav aria-label="Page navigation"><ul class="pagination">';
 
             if ($pager->getCurrentPage() > $pager->getFirstPage()) {
-                $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => $pager->getPrevPage() + 1]).'">«</a></li>';
+                 $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => $pager->getPrevPage() + 1, 'page' => $page]).'">«</a></li>';
             }
             
-            for ($i = $pager->getFirstPage(); $i <= $pager->getLastPage(); $i++) {
+             for ($i = $pager->getFirstPage(); $i <= $pager->getLastPage(); $i++) {
                 if ($pager->isActivePage($i)) {
                     $content .= '<li class="active"><span>'. ($i+1).'</span></li>';
                 } else {
-                      $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => ($i + 1)]).'">'. ($i+1) .'</a></li>';
+                     $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => ($i + 1), 'page' => $page]).'">'. ($i+1) .'</a></li>';
                 }
             }
 
             if ($pager->getCurrentPage() < $pager->getLastPage()) {
-                 $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => $pager->getNextPage() + 1]).'">»</a></li>';
+                 $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => $pager->getNextPage() + 1, 'page' => $page]).'">»</a></li>';
             }
            
             $content .= '</ul></nav></div>';
