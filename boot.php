@@ -39,11 +39,6 @@ if (\rex::isBackend() && \rex::getUser()) {
                 'query' => $query,
                 'page' => $page
             ]);
-        try {
-            $action = \rex_request('action', 'string');
-            $provider = \rex_request('provider', 'string');
-            $query = \rex_request('query', 'string', '');
-            $page = \rex_request('page', 'integer', 1);
             
             if (!isset($this->providers[$provider])) {
                 throw new \rex_exception('Invalid provider');
