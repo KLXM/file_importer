@@ -69,3 +69,18 @@ file_importer_provider_status = Status
 
 # Validierung
 file_importer_pixabay_apikey_missing = Bitte geben Sie einen API-Key für Pixabay ein
+
+# Provider Beschreibungen
+file_importer_provider_pixabay_description = Pixabay bietet über 2.8 Millionen hochwertige Stockfotos, Vektorgrafiken und Videos. Alle Inhalte werden unter der Pixabay Lizenz veröffentlicht und können frei verwendet werden.
+file_importer_provider_unsplash_description = Unsplash bietet hochwertige, frei verwendbare Fotos von talentierten Fotografen aus der ganzen Welt.
+
+# Provider Status
+file_importer_provider_activate = Aktivieren
+file_importer_provider_configured = Konfiguriert
+file_importer_provider_not_configured = Nicht konfiguriert
+file_importer_provider_save_status = Provider-Status speichern
+file_importer_provider_status_saved = Der Status der Provider wurde gespeichert
+
+# Provider Aktionen
+file_importer_provider_settings_saved = Die Provider-Einstellungen wurden gespeichert
+file_importer_provider_settings_error = Fehler beim Speichern der Provider-Einstellungen
