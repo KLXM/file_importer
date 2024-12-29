@@ -85,7 +85,8 @@ $content = '
                 </header>
                 <div class="panel-body">
                     <form method="get" action="' . rex_url::currentBackendPage() . '" class="form-inline">
-                        <input type="hidden" name="page" value="file_importer/main">
+                         <input type="hidden" name="page" value="file_importer/main">
+                        <input type="hidden" name="p" value="' . $p . '">
                         <div class="form-group" style="width: 100%;">
                             <div class="input-group" style="width: 100%;">
                                 <div class="input-group-btn">
