@@ -99,7 +99,7 @@ abstract class AbstractProvider implements ProviderInterface
                 $result = \rex_media_service::addMedia($media, true);
                 unlink($tmpFile);
                 
-                return $result;
+                return $result !== false;
             }
             
             return false;
