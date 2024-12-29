@@ -24,19 +24,32 @@ $searchQuery = rex_get('query', 'string', '');
 $searchType = rex_get('type', 'string', 'image');
 $page = max(1, rex_get('page', 'int', 1));
 
-// Debug
-\rex_logger::factory()->log('debug', 'Search Parameters', [
-    'query' => $searchQuery,
-    'type' => $searchType,
-    'page' => $page
+// Debug der Eingabeparameter
+\rex_logger::factory()->log('debug', 'Raw Input Parameters', [
+    '_GET' => $_GET,
+    'extracted' => [
+        'query' => $searchQuery,
+        'type' => $searchType,
+        'page' => $page
+    ]
 ]);
 
 if ($searchQuery) {
     try {
+        // Debug vor API-Aufruf
+        \rex_logger::factory()->log('debug', 'Calling Provider Search', [
+            'query' => $searchQuery,
+            'type' => $searchType,
+            'page' => $page,
+            'provider_class' => get_class($provider)
+        ]);
+
         $searchResults = $provider->search($searchQuery, $page, ['type' => $searchType]);
-        // Debug
-        \rex_logger::factory()->log('debug', 'Search Results', [
-            'count' => count($searchResults['items'] ?? []),
+        
+        // Debug der Ergebnisse
+        \rex_logger::factory()->log('debug', 'Provider Search Results', [
+            'has_results' => !empty($searchResults),
+            'items_count' => count($searchResults['items'] ?? []),
             'total' => $searchResults['total'] ?? 0
         ]);
     } catch (\Exception $e) {
