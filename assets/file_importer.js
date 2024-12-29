@@ -62,6 +62,12 @@ $(document).on('rex:ready', function() {
             this.loading = true;
             this.updateStatus('loading');
             
+            console.log('Starting search with params:', {
+                query: this.currentQuery,
+                page: this.currentPage,
+                provider: this.currentProvider
+            });
+            
             console.log('Searching for:', this.currentQuery); // Debug
             
             $.ajax({
