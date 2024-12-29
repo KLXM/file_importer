@@ -44,7 +44,14 @@ abstract class AbstractProvider implements ProviderInterface
 
     protected function setCache(string $key, $data, int $expiration = 86400): void
     {
-        $cacheFile = \rex_path::addonCache('file_importer', $key . '.cache');
+        $cacheFolder = \rex_path::addonCache('file_importer');
+        
+        // Erstelle Cache-Ordner falls nicht vorhanden
+        if (!is_dir($cacheFolder)) {
+            mkdir($cacheFolder, 0777, true);
+        }
+        
+        $cacheFile = $cacheFolder . '/' . $key . '.cache';
         $cache = [
             'data' => $data,
             'expires' => time() + $expiration
