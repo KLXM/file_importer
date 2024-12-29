@@ -68,9 +68,11 @@ class PixabayProvider extends AbstractProvider
         if ($type === 'image') {
             $params['image_type'] = 'all';
         }
-
+        
+        error_log("API Key: " . $this->config['apikey']);
         $url = $baseUrl . '?' . http_build_query($params);
-
+        error_log("API URL: " . $url);
+        
         try {
             $ch = curl_init();
             curl_setopt_array($ch, [
