@@ -139,6 +139,14 @@ $content = '
                 <div class="file-importer-results">';
         
         foreach ($searchResults['items'] as $item) {
+            // Erstelle die URL mit allen GET Parametern
+            $importUrl = rex_url::currentBackendPage([
+                'query' => $searchQuery,
+                'type' => $searchType,
+                'p' => $p,
+                'page' => $page
+            ]);
+            
             $content .= '
                 <div class="file-importer-item">
                     <div class="file-importer-preview">
@@ -152,12 +160,8 @@ $content = '
                     </div>
                     <div class="file-importer-info">
                         <div class="file-importer-title">' . rex_escape($item['title']) . '</div>
-                        <form action="' . rex_url::currentBackendPage() . '" method="post">
+                         <form action="' . $importUrl . '" method="post">
                             <input type="hidden" name="import" value="1">
-                            <input type="hidden" name="query" value="' . rex_escape($searchQuery) . '">
-                            <input type="hidden" name="type" value="' . rex_escape($searchType) . '">
-                             <input type="hidden" name="p" value="' . $p . '">
-                            <input type="hidden" name="page" value="' . rex_escape($page) . '">
                             <select name="url" class="form-control file-importer-size-select">';
             
             foreach ($item['size'] as $key => $value) {
@@ -190,7 +194,7 @@ $content = '
            $content .= '<div class="panel-footer"><nav aria-label="Page navigation"><ul class="pagination">';
 
             if ($pager->getCurrentPage() > $pager->getFirstPage()) {
-                 $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => $pager->getPrevPage() + 1, 'page' => $page]).'">«</a></li>';
+                $content .= '<li><a href="'.rex_url::currentBackendPage(['query' => $searchQuery, 'type' => $searchType, 'p' => $pager->getPrevPage() + 1, 'page' => $page]).'">«</a></li>';
             }
             
              for ($i = $pager->getFirstPage(); $i <= $pager->getLastPage(); $i++) {
