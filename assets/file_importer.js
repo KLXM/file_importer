@@ -7,9 +7,8 @@ $(document).on('rex:ready', function() {
         currentProvider: 'pixabay',
         
         init: function() {
+            console.log('FileImporter initialized');
             this.bindEvents();
-            
-            // Nicht mehr automatisch laden
             $('#file-importer-results').empty();
             $('#file-importer-status').empty();
         },
@@ -18,7 +17,10 @@ $(document).on('rex:ready', function() {
             // Suchformular
             $('#file-importer-search').on('submit', (e) => {
                 e.preventDefault();
-                this.currentQuery = $('#file-importer-query').val();
+                const query = $('#file-importer-query').val();
+                console.log('Search submitted:', query);
+                
+                this.currentQuery = query;
                 this.currentPage = 1;
                 this.hasMore = true;
                 $('#file-importer-results').empty();
@@ -34,53 +36,37 @@ $(document).on('rex:ready', function() {
                 const url = selectSize.find('option:selected').data('url');
                 const filename = item.find('.file-importer-title').text();
                 
+                console.log('Import clicked:', { url, filename });
                 this.importFile(url, filename, btn);
-            });
-            
-            // Größenauswahl ändern
-            $(document).on('change', '.file-importer-size-select', function() {
-                const url = $(this).find('option:selected').data('url');
-                $(this).closest('.file-importer-item').data('download-url', url);
-            });
-
-            // Lazy Load für weitere Seiten
-            $(window).on('scroll', () => {
-                if (this.hasMore && !this.loading) {
-                    const scrollPos = $(window).scrollTop() + $(window).height();
-                    const threshold = $(document).height() - 100;
-                    
-                    if (scrollPos > threshold) {
-                        this.loadMore();
-                    }
-                }
             });
         },
         
         loadResults: function() {
-            if (this.loading) return;
+            if (this.loading) {
+                console.log('Already loading, skipping request');
+                return;
+            }
             
             this.loading = true;
             this.updateStatus('loading');
             
-            console.log('Starting search with params:', {
+            const params = {
+                page: 'file_importer/main',
+                file_importer_api: 1,
+                action: 'search',
+                provider: this.currentProvider,
                 query: this.currentQuery,
-                page: this.currentPage,
-                provider: this.currentProvider
-            });
-            
-            console.log('Searching for:', this.currentQuery); // Debug
+                page: this.currentPage
+            };
+
+            console.log('Loading results with params:', params);
             
             $.ajax({
-                url: window.location.href,
+                url: window.location.pathname,
                 method: 'GET',
-                data: {
-                    file_importer_api: 1,
-                    action: 'search',
-                    provider: this.currentProvider,
-                    query: this.currentQuery,
-                    page: parseInt(this.currentPage)
-                },
+                data: params,
                 success: (response) => {
+                    console.log('Search response:', response);
                     if (response.success) {
                         this.renderResults(response.data);
                     } else {
@@ -88,6 +74,7 @@ $(document).on('rex:ready', function() {
                     }
                 },
                 error: (xhr, status, error) => {
+                    console.error('Search error:', { status, error, xhr });
                     this.showError('Error loading results: ' + error);
                 },
                 complete: () => {
@@ -96,16 +83,16 @@ $(document).on('rex:ready', function() {
             });
         },
         
-        loadMore: function() {
-            if (this.hasMore && !this.loading) {
-                this.currentPage++;
-                this.loadResults();
-            }
-        },
-        
         renderResults: function(data) {
+            console.log('Rendering results:', data);
             const container = $('#file-importer-results');
             let html = '';
+            
+            if (!data.items || !data.items.length) {
+                container.html('<div class="alert alert-info">Keine Ergebnisse gefunden</div>');
+                this.hasMore = false;
+                return;
+            }
             
             data.items.forEach(item => {
                 html += `
@@ -137,13 +124,31 @@ $(document).on('rex:ready', function() {
                 `;
             });
             
-            container.append(html);
+            if (this.currentPage === 1) {
+                container.html(html);
+            } else {
+                container.append(html);
+            }
             
             this.hasMore = data.page < data.total_pages;
             this.updateStatus('results', data.total);
+            
+            // Infinite Scroll
+            if (this.hasMore) {
+                $(window).off('scroll.fileimporter').on('scroll.fileimporter', () => {
+                    if ($(window).scrollTop() + $(window).height() > $(document).height() - 100) {
+                        if (!this.loading) {
+                            this.currentPage++;
+                            this.loadResults();
+                        }
+                    }
+                });
+            }
         },
         
         importFile: function(url, filename, btn) {
+            console.log('Starting import:', { url, filename });
+            
             const progress = btn.closest('.file-importer-item').find('.file-importer-progress');
             const categoryId = $('#rex-mediapool-category').val();
             
@@ -154,6 +159,7 @@ $(document).on('rex:ready', function() {
                 url: window.location.pathname,
                 method: 'POST',
                 data: {
+                    page: 'file_importer/main',
                     file_importer_api: 1,
                     action: 'download',
                     provider: this.currentProvider,
@@ -162,20 +168,18 @@ $(document).on('rex:ready', function() {
                     category_id: categoryId
                 },
                 success: (response) => {
+                    console.log('Import response:', response);
                     if (response.success) {
                         this.showSuccess('Die Datei wurde erfolgreich importiert');
-                        setTimeout(() => {
-                            btn.prop('disabled', false);
-                            progress.hide();
-                        }, 1000);
                     } else {
                         this.showError(response.error || 'Import fehlgeschlagen');
-                        btn.prop('disabled', false);
-                        progress.hide();
                     }
                 },
                 error: (xhr, status, error) => {
+                    console.error('Import error:', { status, error, xhr });
                     this.showError('Error importing file: ' + error);
+                },
+                complete: () => {
                     btn.prop('disabled', false);
                     progress.hide();
                 }
@@ -202,6 +206,7 @@ $(document).on('rex:ready', function() {
         },
         
         showError: function(message) {
+            console.error('Error:', message);
             const alert = $('<div class="alert alert-danger"></div>').text(message);
             $('#file-importer-alerts').empty().append(alert);
             
@@ -211,6 +216,7 @@ $(document).on('rex:ready', function() {
         },
         
         showSuccess: function(message) {
+            console.log('Success:', message);
             const alert = $('<div class="alert alert-success"></div>').text(message);
             $('#file-importer-alerts').empty().append(alert);
             
